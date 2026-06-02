@@ -2,12 +2,14 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import axios from '../api/axios';
-import { CheckCircle, Clock, Calendar, User, Activity, AlertCircle, Sparkles, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Clock, Calendar, User, Activity, AlertCircle, AlertTriangle, MessageSquare, Trash2, ClipboardList, ShieldAlert } from 'lucide-react';
+import Chat from '../components/Chat';
 
 const Dashboard = () => {
     const { user } = useContext(AuthContext);
     const [data, setData] = useState(null);
     const [emergencies, setEmergencies] = useState([]);
+    const [activeChat, setActiveChat] = useState(null);
 
     useEffect(() => {
         if (!user) return;
@@ -32,7 +34,16 @@ const Dashboard = () => {
                 } else if (user.role === 'admin') {
                     const statsRes = await axios.get('/admin/stats');
                     const usersRes = await axios.get('/admin/users');
-                    setData({ stats: statsRes.data, users: usersRes.data });
+                    const doctorsRes = await axios.get('/admin/doctors');
+                    const appointmentsRes = await axios.get('/admin/appointments');
+                    const emergenciesRes = await axios.get('/admin/emergencies');
+                    setData({ 
+                        stats: statsRes.data, 
+                        users: usersRes.data, 
+                        doctors: doctorsRes.data,
+                        allAppointments: appointmentsRes.data,
+                        allEmergencies: emergenciesRes.data
+                    });
                 }
             } catch (err) {
                 console.error('Failed to fetch dashboard data', err);
@@ -54,12 +65,33 @@ const Dashboard = () => {
         }
     };
 
+    const handleApproveDoctor = async (id) => {
+        try {
+            await axios.put(`/admin/doctor/approve/${id}`);
+            alert('Doctor approved successfully!');
+            window.location.reload();
+        } catch (err) {
+            console.error('Failed to approve doctor', err);
+        }
+    };
+
+    const handleDeleteUser = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+        try {
+            await axios.delete(`/admin/users/${id}`);
+            alert('User deleted successfully!');
+            window.location.reload();
+        } catch (err) {
+            console.error('Failed to delete user', err);
+        }
+    };
+
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
             <div className="mb-10 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl p-8 shadow-xl text-white flex items-center justify-between overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-20 -translate-y-20"></div>
                 <div className="relative z-10">
-                    <p className="text-blue-100 font-medium mb-1 uppercase tracking-widest text-sm flex items-center gap-2"><Sparkles size={16} /> {user.role} Dashboard</p>
+                    <p className="text-blue-100 font-medium mb-1 uppercase tracking-widest text-sm flex items-center gap-2">{user.role} Dashboard</p>
                     <h1 className="text-4xl font-extrabold pb-1">Welcome back, {user.name.split(' ')[0]}!</h1>
                     <p className="text-blue-100 mt-2 text-lg">Here is what's happening with your account today.</p>
                 </div>
@@ -101,6 +133,14 @@ const Dashboard = () => {
                                                     {apt.status === 'rejected' && <AlertCircle size={18} />}
                                                     {apt.status.toUpperCase()}
                                                 </div>
+                                                {apt.status === 'approved' && (
+                                                    <button 
+                                                        onClick={() => setActiveChat({ id: apt.doctor?.user?._id, name: `Dr. ${apt.doctor?.user?.name}` })}
+                                                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 transition ml-2 shadow-md active:scale-95"
+                                                    >
+                                                        <MessageSquare size={16} /> Chat
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                         {apt.prescription && (
@@ -132,11 +172,12 @@ const Dashboard = () => {
                                                 }`}>
                                                 <div>
                                                     <p className="font-semibold text-gray-800">{em.message}</p>
+                                                    {em.location && <p className="text-sm text-gray-700 font-medium mt-1">📍 {em.location}</p>}
                                                     <p className="text-sm text-gray-500 mt-1">{new Date(em.createdAt).toLocaleString()}</p>
                                                 </div>
                                                 <div className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold ${em.status === 'responded'
-                                                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                                                        : 'bg-red-100 text-red-700 border border-red-200 animate-pulse'
+                                                    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                                    : 'bg-red-100 text-red-700 border border-red-200 animate-pulse'
                                                     }`}>
                                                     {em.status === 'responded' ? <><CheckCircle size={18} /> Responded by Dr. {em.respondedBy?.name || 'Unknown'}</> : <><Clock size={18} /> Waiting for Response</>}
                                                 </div>
@@ -164,6 +205,7 @@ const Dashboard = () => {
                                                 <div>
                                                     <h3 className="font-bold text-lg text-red-900 flex items-center gap-2"><AlertTriangle size={18} /> {em.patient?.name}</h3>
                                                     <p className="text-red-700 text-sm mt-1">{em.message}</p>
+                                                    {em.location && <p className="text-red-800 font-bold text-sm mt-1">📍 Location: {em.location}</p>}
                                                     <p className="text-red-400 text-xs mt-2">{new Date(em.createdAt).toLocaleString()}</p>
                                                 </div>
                                                 <button
@@ -247,6 +289,13 @@ const Dashboard = () => {
                                                     ${apt.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : apt.status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}`}>
                                                     {apt.status}
                                                 </span>
+                                                <button 
+                                                    onClick={() => setActiveChat({ id: apt.patient?._id, name: apt.patient?.name })}
+                                                    className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition active:scale-95"
+                                                    title="Chat with Patient"
+                                                >
+                                                    <MessageSquare size={20} />
+                                                </button>
                                             </div>
                                             <div className="bg-[#F8FAFC] p-4 rounded-2xl mb-6 flex-grow">
                                                 <div className="flex items-center gap-2 text-gray-700 font-semibold mb-2">
@@ -325,13 +374,14 @@ const Dashboard = () => {
                                 <div className="p-2 bg-gray-100 text-gray-600 rounded-xl"><User size={24} /></div>
                                 <h2 className="text-2xl font-bold text-gray-900">System Users</h2>
                             </div>
-                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-12">
                                 <table className="w-full text-left">
                                     <thead className="bg-[#F8FAFC] border-b border-gray-100">
                                         <tr>
                                             <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">User Name</th>
                                             <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">Email Address</th>
                                             <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">Role Type</th>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider text-right">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
@@ -350,6 +400,136 @@ const Dashboard = () => {
                                                         {u.role}
                                                     </span>
                                                 </td>
+                                                <td className="p-6 text-right">
+                                                    {u._id !== user._id && (
+                                                        <button 
+                                                            onClick={() => handleDeleteUser(u._id)}
+                                                            className="text-rose-500 hover:text-rose-700 p-2 hover:bg-rose-50 rounded-lg transition"
+                                                            title="Delete User"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-emerald-100 text-emerald-600 rounded-xl"><Activity size={24} /></div>
+                                <h2 className="text-2xl font-bold text-gray-900">Doctor Management</h2>
+                            </div>
+                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-12">
+                                <table className="w-full text-left">
+                                    <thead className="bg-[#F8FAFC] border-b border-gray-100">
+                                        <tr>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">Doctor Name</th>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">Specialization</th>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">Status</th>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {data.doctors.map(doc => (
+                                            <tr key={doc._id} className="hover:bg-emerald-50/50 transition">
+                                                <td className="p-6 font-bold text-gray-900">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">D</div>
+                                                        <div>
+                                                            <p>Dr. {doc.user?.name}</p>
+                                                            <p className="text-xs text-gray-500 font-normal">{doc.user?.email}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="p-6 text-gray-600 font-medium">{doc.specialization}</td>
+                                                <td className="p-6">
+                                                    <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${doc.isApproved ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                        {doc.isApproved ? 'Approved' : 'Pending'}
+                                                    </span>
+                                                </td>
+                                                <td className="p-6 text-right">
+                                                    {!doc.isApproved && (
+                                                        <button 
+                                                            onClick={() => handleApproveDoctor(doc._id)}
+                                                            className="bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-black transition active:scale-95"
+                                                        >
+                                                            Approve Doctor
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-blue-100 text-blue-600 rounded-xl"><ClipboardList size={24} /></div>
+                                <h2 className="text-2xl font-bold text-gray-900">Appointment Monitoring</h2>
+                            </div>
+                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-12">
+                                <table className="w-full text-left">
+                                    <thead className="bg-[#F8FAFC] border-b border-gray-100">
+                                        <tr>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">Patient</th>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">Doctor</th>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">Date/Time</th>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {data.allAppointments.map(apt => (
+                                            <tr key={apt._id} className="hover:bg-gray-50 transition">
+                                                <td className="p-6 font-medium text-gray-900">{apt.patient?.name}</td>
+                                                <td className="p-6 text-gray-600">Dr. {apt.doctor?.user?.name}</td>
+                                                <td className="p-6 text-gray-500 text-sm">
+                                                    {new Date(apt.date).toLocaleDateString()} at {apt.time}
+                                                </td>
+                                                <td className="p-6 text-right">
+                                                    <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider 
+                                                        ${apt.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : 
+                                                          apt.status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}`}>
+                                                        {apt.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 bg-red-100 text-red-600 rounded-xl"><ShieldAlert size={24} /></div>
+                                <h2 className="text-2xl font-bold text-gray-900">Emergency SOS Logs</h2>
+                            </div>
+                            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                                <table className="w-full text-left">
+                                    <thead className="bg-[#F8FAFC] border-b border-gray-100">
+                                        <tr>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">Patient</th>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">Message</th>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">Location</th>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider">Responded By</th>
+                                            <th className="p-6 font-semibold text-gray-500 text-sm uppercase tracking-wider text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {data.allEmergencies.map(em => (
+                                            <tr key={em._id} className="hover:bg-red-50/30 transition">
+                                                <td className="p-6 font-medium text-gray-900">{em.patient?.name}</td>
+                                                <td className="p-6 text-gray-600 text-sm italic">"{em.message}"</td>
+                                                <td className="p-6 text-gray-800 text-sm font-medium">{em.location || 'N/A'}</td>
+                                                <td className="p-6 text-gray-500 text-sm">
+                                                    {em.respondedBy ? `Dr. ${em.respondedBy.name}` : 'Not Responded'}
+                                                </td>
+                                                <td className="p-6 text-right">
+                                                    <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider 
+                                                        ${em.status === 'responded' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700 animate-pulse'}`}>
+                                                        {em.status}
+                                                    </span>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -358,6 +538,13 @@ const Dashboard = () => {
                         </div>
                     )}
                 </>
+            )}
+            {activeChat && (
+                <Chat 
+                    receiverId={activeChat.id} 
+                    receiverName={activeChat.name} 
+                    onClose={() => setActiveChat(null)} 
+                />
             )}
         </div>
     );

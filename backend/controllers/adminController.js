@@ -35,4 +35,58 @@ const getStats = async (req, res) => {
     }
 };
 
-module.exports = { getAllUsers, approveDoctor, getStats };
+const getAllDoctors = async (req, res) => {
+    try {
+        const doctors = await Doctor.find({}).populate('user', 'name email');
+        res.json(doctors);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const deleteUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        // If doctor, delete doctor profile too
+        if (user.role === 'doctor') {
+            await Doctor.findOneAndDelete({ user: user._id });
+        }
+        
+        await User.findByIdAndDelete(req.params.id);
+        res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const getAllAppointments = async (req, res) => {
+    try {
+        const appointments = await Appointment.find({})
+            .populate('patient', 'name email')
+            .populate({
+                path: 'doctor',
+                populate: { path: 'user', select: 'name email' }
+            })
+            .sort({ createdAt: -1 });
+        res.json(appointments);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const getAllEmergencies = async (req, res) => {
+    try {
+        const Emergency = require('../models/Emergency'); // Dynamic require if not imported
+        const emergencies = await Emergency.find({})
+            .populate('patient', 'name email')
+            .populate('respondedBy', 'name email')
+            .sort({ createdAt: -1 });
+        res.json(emergencies);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+module.exports = { getAllUsers, approveDoctor, getStats, getAllDoctors, deleteUser, getAllAppointments, getAllEmergencies };

@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import axios from '../api/axios';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Activity, Clock, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Activity, Clock, ShieldCheck } from 'lucide-react';
 
 const Home = () => {
     const { user } = useContext(AuthContext);
@@ -38,7 +38,7 @@ const Home = () => {
                 <div className="max-w-6xl mx-auto relative z-10 flex flex-col md:flex-row items-center gap-12 px-4">
                     <div className="flex-1 text-center md:text-left">
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-blue-100 text-sm font-semibold mb-8">
-                            <Sparkles size={16} /> Welcome to the Future of Healthcare
+                            Welcome to the Future of Healthcare
                         </div>
                         <h1 className="text-5xl md:text-7xl font-extrabold mb-8 tracking-tight text-white drop-shadow-lg">
                             Modern Healthcare <br /><span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-300">Simplified.</span>

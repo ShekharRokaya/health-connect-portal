@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, User, Mail, Lock, Stethoscope, Briefcase, DollarSign, Activity, Sparkles } from 'lucide-react';
+import { UserPlus, User, Mail, Lock, Stethoscope, Briefcase, DollarSign, Activity } from 'lucide-react';
 
 const Register = () => {
     const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'patient', specialization: '', experience: '', fees: '' });
@@ -126,7 +126,7 @@ const Register = () => {
 
                 {/* Footer badge */}
                 <div className="text-center mt-6">
-                    <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium"><Sparkles size={12} /> Powered by HealthConnect</span>
+                    <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium">Powered by HealthConnect</span>
                 </div>
             </div>
         </div>

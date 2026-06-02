@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
 import axios from '../api/axios';
-import { Brain, Search, Stethoscope, ArrowRight, Sparkles, AlertCircle, Activity } from 'lucide-react';
+import { Brain, Search, Stethoscope, ArrowRight, AlertCircle, Activity } from 'lucide-react';
 
 const SymptomChecker = () => {
     const { user } = useContext(AuthContext);
@@ -46,7 +46,7 @@ const SymptomChecker = () => {
             {/* Hero Header */}
             <div className="text-center mb-12">
                 <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-sm font-bold mb-6 border border-blue-100">
-                    <Sparkles size={16} /> AI-Powered Health Analysis
+                    AI-Powered Health Analysis
                 </div>
                 <h1 className="text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
                     Symptom <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Checker</span>

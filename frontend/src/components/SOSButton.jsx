@@ -7,6 +7,7 @@ const SOSButton = () => {
     const { user } = useContext(AuthContext);
     const [showModal, setShowModal] = useState(false);
     const [message, setMessage] = useState('');
+    const [location, setLocation] = useState('');
     const [sent, setSent] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -14,15 +15,30 @@ const SOSButton = () => {
 
     const handleSOS = async () => {
         setLoading(true);
+        let finalLocation = location;
+        
+        try {
+            if ("geolocation" in navigator && !finalLocation) {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+                });
+                finalLocation = `${position.coords.latitude}, ${position.coords.longitude}`;
+            }
+        } catch (geoErr) {
+            console.warn("Geolocation failed or not permitted:", geoErr);
+        }
+
         try {
             await axios.post('/emergency', {
-                message: message || 'Emergency! Patient needs immediate medical attention.'
+                message: message || 'Emergency! Patient needs immediate medical attention.',
+                location: finalLocation
             });
             setSent(true);
             setTimeout(() => {
                 setSent(false);
                 setShowModal(false);
                 setMessage('');
+                setLocation('');
             }, 3000);
         } catch (err) {
             alert('Failed to send SOS. Please try again.');
@@ -73,6 +89,13 @@ const SOSButton = () => {
                                 </div>
                             ) : (
                                 <>
+                                    <input
+                                        type="text"
+                                        value={location}
+                                        onChange={(e) => setLocation(e.target.value)}
+                                        placeholder="Your Current Location (optional)"
+                                        className="w-full border border-gray-200 p-4 rounded-xl outline-none focus:ring-2 focus:ring-red-500 mb-4 text-sm bg-gray-50/50"
+                                    />
                                     <textarea
                                         value={message}
                                         onChange={(e) => setMessage(e.target.value)}

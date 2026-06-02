@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogIn, Mail, Lock, Activity, Sparkles } from 'lucide-react';
+import { LogIn, Mail, Lock, Activity } from 'lucide-react';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -90,7 +90,7 @@ const Login = () => {
 
                 {/* Footer badge */}
                 <div className="text-center mt-6">
-                    <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium"><Sparkles size={12} /> Powered by HealthConnect</span>
+                    <span className="inline-flex items-center gap-1.5 text-xs text-gray-400 font-medium">Powered by HealthConnect</span>
                 </div>
             </div>
         </div>

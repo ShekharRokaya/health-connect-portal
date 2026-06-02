@@ -5,7 +5,7 @@ const doctorSchema = new mongoose.Schema({
     specialization: { type: String, required: true },
     experience: { type: Number, required: true },
     fees: { type: Number, required: true },
-    isApproved: { type: Boolean, default: true }, // Auto-approve for testing
+    isApproved: { type: Boolean, default: false },
     availableTimeSlots: [{
         date: { type: Date, required: true },
         time: { type: String, required: true }, // e.g., "10:00 AM"
